@@ -1,0 +1,93 @@
+import React from "react";
+import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
+import { create } from "zustand";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import "tailwindcss/tailwind.css";
+
+const useJobStore = create((set) => ({
+  jobs: [
+    { id: 1, title: "Frontend Developer", company: "TechCorp", description: "Build amazing UIs." },
+    { id: 2, title: "React Engineer", company: "InnovateX", description: "Work with React and Zustand." },
+  ],
+  addJob: (job) => set((state) => ({ jobs: [...state.jobs, job] })),
+}));
+
+const JobList = () => {
+  const { jobs } = useJobStore();
+  return (
+    <div className="p-4">
+      <h1 className="text-2xl font-bold">Job Listings</h1>
+      {jobs.map((job) => (
+        <div key={job.id} className="p-4 my-2 border rounded shadow">
+          <Link to={/job/${job.id}} className="text-blue-500">{job.title}</Link>
+          <p>{job.company}</p>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+const JobDetails = ({ id }) => {
+  const { jobs } = useJobStore();
+  const job = jobs.find((j) => j.id === Number(id));
+  if (!job) return <p>Job not found</p>;
+  return (
+    <div className="p-4">
+      <h1 className="text-2xl font-bold">{job.title}</h1>
+      <p>{job.company}</p>
+      <p>{job.description}</p>
+    </div>
+  );
+};
+
+const jobSchema = z.object({
+  title: z.string().min(3),
+  company: z.string().min(2),
+  description: z.string().min(10),
+});
+
+const Dashboard = () => {
+  const { addJob } = useJobStore();
+  const { register, handleSubmit, formState: { errors } } = useForm({ resolver: zodResolver(jobSchema) });
+
+  const onSubmit = (data) => {
+    addJob({ id: Date.now(), ...data });
+  };
+
+  return (
+    <div className="p-4">
+      <h1 className="text-2xl font-bold">Post a Job</h1>
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <input {...register("title")} placeholder="Job Title" className="border p-2 w-full" />
+        <p className="text-red-500">{errors.title?.message}</p>
+        <input {...register("company")} placeholder="Company" className="border p-2 w-full" />
+        <p className="text-red-500">{errors.company?.message}</p>
+        <textarea {...register("description")} placeholder="Job Description" className="border p-2 w-full" />
+        <p className="text-red-500">{errors.description?.message}</p>
+        <button type="submit" className="bg-blue-500 text-white p-2 rounded">Submit</button>
+      </form>
+    </div>
+  );
+};
+
+const App = () => {
+  return (
+    <Router>
+      <div className="min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white p-4">
+        <nav className="flex gap-4 p-4">
+          <Link to="/" className="text-blue-500">Home</Link>
+          <Link to="/dashboard" className="text-blue-500">Dashboard</Link>
+        </nav>
+        <Routes>
+          <Route path="/" element={<JobList />} />
+          <Route path="/job/:id" element={<JobDetails />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+        </Routes>
+      </div>
+    </Router>
+  );
+};
+
+export default App;
